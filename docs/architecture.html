@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>机械臂小车双板架构</title>
+<style>
+  body { margin: 0; padding: 24px 12px; background: #f8fafc; font-family: "Microsoft YaHei", system-ui, sans-serif; color: #1f2937; line-height: 1.5; }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; box-sizing: border-box; }
+  .title { text-align: center; font-size: 20px; font-weight: 700; padding: 6px 0 2px; }
+  .sub { text-align: center; font-size: 13px; color: #6b7280; padding-bottom: 12px; }
+  .layer { display: flex; justify-content: center; }
+  .card { width: 92%; border-radius: 10px; overflow: hidden; }
+  .arrow { text-align: center; font-size: 22px; color: #4b5563; margin: 2px 0; }
+  .arrow-label { text-align: center; font-size: 12px; color: #6b7280; }
+  .card-head { padding: 8px 14px; font-weight: 700; font-size: 15px; }
+  .card-body { display: flex; flex-wrap: wrap; }
+  .col { flex: 1 1 46%; box-sizing: border-box; padding: 10px 14px; min-width: 280px; }
+  .col + .col { border-left: 1px dashed #d1d5db; }
+  .col-title { font-weight: 700; font-size: 13px; }
+  .col p { font-size: 13px; margin: 4px 0 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  th, td { border: 1px solid #e5e7eb; padding: 3px 6px; text-align: left; }
+  th { background: #f3f4f6; }
+  .exec { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+  .exec-card { flex: 1 1 40%; min-width: 240px; background: #f9fafb; border: 1.5px solid #9ca3af; border-radius: 10px; padding: 10px 14px; text-align: center; }
+  .exec-card .t { font-weight: 700; font-size: 14px; }
+  .exec-card p { font-size: 13px; color: #374151; margin: 3px 0 0; }
+  .notes { width: 100%; margin-top: 14px; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 10px; padding: 10px 14px; box-sizing: border-box; }
+  .notes .t { font-weight: 700; font-size: 14px; color: #b45309; }
+  .notes ul { margin: 6px 0 0; padding-left: 20px; font-size: 13px; color: #374151; }
+  code { background: #fff; padding: 1px 6px; border-radius: 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">机械臂小车 · 双板系统架构（示意）</div>
+  <div class="sub">机器人及人工智能大赛 · 固件工程 · 手机App（蓝牙）→ trigger板 → CAN → 底盘板 → 执行器</div>
+
+  <!-- 第1层：手机App -->
+  <div class="layer">
+    <div style="width:86%;background:#eef2ff;border:1.5px solid #6366f1;border-radius:10px;padding:10px 14px;text-align:center;">
+      <div style="font-weight:700;font-size:15px;">手机 App（蓝牙遥控）</div>
+      <div style="font-size:13px;color:#374151;margin-top:4px;">
+        按键数据包 <code>[key, 1, down]</code>　·　滑杆数据包 <code>[slider, 1, 45]</code>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">格式：方括号包头包尾，逗号分隔，以 ] 收包</div>
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+  <div class="arrow-label">蓝牙 UART1 115200</div>
+
+  <!-- 第2层：trigger板 -->
+  <div class="layer">
+    <div class="card" style="border:1.5px solid #0ea5e9;">
+      <div class="card-head" style="background:#e0f2fe;">① smart car -trigger　遥控 + 机械臂控制板（STM32F103C8）</div>
+      <div class="card-body">
+        <div class="col">
+          <div class="col-title" style="color:#0369a1;">解析蓝牙指令</div>
+          <p>key → 底盘运动：<b>1</b>前进 <b>2</b>后退 <b>3</b>右转 <b>4</b>左转 <b>8</b>停止</p>
+          <p>key → 蜂鸣器：<b>6</b>播《洒水车》 <b>7</b>停止</p>
+          <p>slider 1~4 → 机械臂舵机角度（0~180°）</p>
+        </div>
+        <div class="col">
+          <div class="col-title" style="color:#0369a1;">板载外设</div>
+          <p>4 路舵机：TIM2 CH1~CH4（PA0~PA3，50Hz，0.5~2.5ms）→ 机械臂</p>
+          <p>蜂鸣器：TIM1 CH1（PA8）</p>
+          <p>OLED 显示：速度 / 各臂角度</p>
+          <p>上电初始角度：80° / 130° / 180° / 60°</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+  <div class="arrow-label">CAN 总线 125 kbps · 标准帧 ID 0x200</div>
+
+  <!-- 第3层：smart car板 -->
+  <div class="layer">
+    <div class="card" style="border:1.5px solid #059669;">
+      <div class="card-head" style="background:#d1fae5;">② smart car　底盘驱动板（STM32F103C8）</div>
+      <div class="card-body">
+        <div class="col">
+          <div class="col-title" style="color:#047857;">CAN 指令 → 电机动作</div>
+          <table>
+            <tr><th>Data[0]</th><th>动作</th><th>Data[1]</th></tr>
+            <tr><td>0x01</td><td>前进</td><td>速度 0~100</td></tr>
+            <tr><td>0x02</td><td>右转</td><td>转向速度</td></tr>
+            <tr><td>0x03</td><td>左转</td><td>转向速度</td></tr>
+            <tr><td>0x04</td><td>后退</td><td>速度 0~100</td></tr>
+            <tr><td>0x05</td><td>避障动作</td><td>（trigger 侧预留）</td></tr>
+          </table>
+        </div>
+        <div class="col">
+          <div class="col-title" style="color:#047857;">板载外设</div>
+          <p>电机驱动：双后轮 TIM2（CH2/CH3）+ 双前轮 TIM4（CH3/CH4），方向 IO PA4~7 / PB4~7</p>
+          <p>超声波 HC-SR04：PB10 触发 / PB11 回波（测距函数已写好）</p>
+          <p>OLED / LED / 独立按键</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">▼</div>
+
+  <!-- 第4层：执行器 -->
+  <div class="exec">
+    <div class="exec-card">
+      <div class="t">底盘执行器</div>
+      <p>4 个直流电机（前后四轮独立驱动）</p>
+    </div>
+    <div class="exec-card">
+      <div class="t">机械臂执行器</div>
+      <p>4 个舵机（4 自由度机械臂，trigger 板直接驱动）</p>
+    </div>
+  </div>
+
+  <!-- 疑点标注 -->
+  <div class="notes">
+    <div class="t">⚠ 代码浏览中发现的疑点（未验证硬件）</div>
+    <ul>
+      <li><b>trigger/main.c</b>：slider 分支末尾把 Angle1~4 强制重置为 38/180/60/60 —— 每次收到滑杆包后机械臂角度会被复位，疑似笔误。</li>
+      <li><b>trigger/main.c</b>：主函数未调用 Buzzer_Init()，按键 6 播放蜂鸣器时可能无输出。</li>
+      <li><b>smart car/main.c</b>：已声明自动避障模式与超声波测距，但主循环未接入避障逻辑（front_dis 恒为 0）。</li>
+      <li><b>smart car/Servo.c</b>：引用 PWM_SetServoCompare3，但该工程 PWM.c 中无此函数定义，需确认该文件是否实际参与编译。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

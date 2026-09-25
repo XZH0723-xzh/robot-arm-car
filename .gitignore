@@ -1,0 +1,25 @@
+# Keil MDK 编译产物
+Objects/
+Listings/
+*.uvguix.*
+*.uvoptx
+*.crf
+*.o
+*.d
+*.lst
+*.map
+*.axf
+*.dep
+*.lnp
+*.htm
+*.scvd
+*.bak
+*.tmp
+RTE/
+
+# 系统 / 编辑器
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
